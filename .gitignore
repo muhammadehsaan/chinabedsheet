@@ -1,0 +1,17 @@
+backend/node_modules/
+frontend/node_modules/
+
+backend/.env
+frontend/.env
+
+backend/*.log
+backend/*.err
+backend/*.out
+frontend/*.log
+
+frontend/dist/
+frontend/release/
+release/
+
+.DS_Store
+Thumbs.db
