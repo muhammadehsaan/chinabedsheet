@@ -44,6 +44,70 @@ function getRuntimeConfigPath() {
   return path.join(app.getPath("userData"), "backend.env");
 }
 
+function normalizeDatabaseUrl(rawValue) {
+  const text = String(rawValue || "").trim();
+  if (!text) {
+    return null;
+  }
+
+  const unwrapped =
+    (text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))
+      ? text.slice(1, -1)
+      : text;
+
+  let parsed;
+  try {
+    parsed = new URL(unwrapped);
+  } catch (_error) {
+    return null;
+  }
+
+  if (!/^postgres(ql)?:$/i.test(parsed.protocol)) {
+    return null;
+  }
+
+  const neonMatch = parsed.hostname.match(/^(ep-[^.]+?)(-pooler)?(\.[^.]+\.aws\.neon\.tech)$/i);
+  if (!neonMatch) {
+    return null;
+  }
+
+  const [, projectHost, poolerSuffix, regionHost] = neonMatch;
+  if (!poolerSuffix) {
+    parsed.hostname = `${projectHost}-pooler${regionHost}`;
+  }
+  if (!parsed.searchParams.get("sslmode")) {
+    parsed.searchParams.set("sslmode", "require");
+  }
+  if (!parsed.searchParams.get("channel_binding")) {
+    parsed.searchParams.set("channel_binding", "require");
+  }
+
+  const normalized = parsed.toString();
+  if (text.startsWith('"') && text.endsWith('"')) {
+    return `"${normalized}"`;
+  }
+  if (text.startsWith("'") && text.endsWith("'")) {
+    return `'${normalized}'`;
+  }
+  return normalized;
+}
+
+function migrateRuntimeConfig(configPath) {
+  if (!fs.existsSync(configPath)) {
+    return;
+  }
+
+  const currentText = fs.readFileSync(configPath, "utf8");
+  const nextText = currentText.replace(/^DATABASE_URL=(.+)$/m, (fullMatch, value) => {
+    const normalized = normalizeDatabaseUrl(value);
+    return normalized ? `DATABASE_URL=${normalized}` : fullMatch;
+  });
+
+  if (nextText !== currentText) {
+    fs.writeFileSync(configPath, nextText, "utf8");
+  }
+}
+
 function ensureRuntimeConfig() {
   const configPath = getRuntimeConfigPath();
   const templatePath = path.join(__dirname, "backend.env.template");
@@ -52,6 +116,8 @@ function ensureRuntimeConfig() {
   if (!fs.existsSync(configPath)) {
     fs.copyFileSync(templatePath, configPath);
   }
+
+  migrateRuntimeConfig(configPath);
 
   return configPath;
 }
