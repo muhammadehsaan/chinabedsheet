@@ -354,13 +354,33 @@ model AuditLog {
   createdAt DateTime @default(now())
 }
 
+model Role {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  name        String   @unique
+  description String?
+  status      String   @default("Active")
+  isLocked    Boolean  @default(false)
+  permissions Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+}
+
 model User {
   id           Int      @id @default(autoincrement())
   name         String
+  username     String?
   email        String   @unique
+  phone        String?
+  notes        String?
   passwordHash String
   role         String   @default("Admin")
+  roleId       Int?
   status       String   @default("Active")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  roleConfig Role? @relation(fields: [roleId], references: [id])
 }

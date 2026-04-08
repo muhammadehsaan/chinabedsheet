@@ -1,6 +1,7 @@
 const express = require("express");
 
 const { prisma } = require("../db");
+const { requirePermission } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async");
 const { round2, round3 } = require("../utils/money");
 
@@ -8,6 +9,7 @@ const router = express.Router();
 
 router.get(
   "/recipes",
+  requirePermission("production.view"),
   asyncHandler(async (req, res) => {
     const recipes = await prisma.productionRecipe.findMany({
       include: { bomLines: true },
@@ -19,6 +21,7 @@ router.get(
 
 router.post(
   "/recipes",
+  requirePermission("production.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const name = String(payload.name || "").trim();
@@ -50,6 +53,7 @@ router.post(
 
 router.patch(
   "/recipes/:id",
+  requirePermission("production.edit"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const payload = req.body || {};
@@ -68,6 +72,7 @@ router.patch(
 
 router.get(
   "/recipes/:id/bom",
+  requirePermission("production.view"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const lines = await prisma.bomLine.findMany({ where: { recipeId: id } });
@@ -77,6 +82,7 @@ router.get(
 
 router.post(
   "/recipes/:id/bom",
+  requirePermission("production.edit"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const lines = Array.isArray(req.body.lines) ? req.body.lines : [];
@@ -103,6 +109,7 @@ router.post(
 
 router.get(
   "/runs",
+  requirePermission("production.view"),
   asyncHandler(async (req, res) => {
     const runs = await prisma.productionRun.findMany({
       include: { recipe: true },
@@ -114,6 +121,7 @@ router.get(
 
 router.post(
   "/runs",
+  requirePermission("production.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const recipeId = payload.recipeId ? Number(payload.recipeId) : null;

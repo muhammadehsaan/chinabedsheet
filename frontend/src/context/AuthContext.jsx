@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import { authApi } from "../api/modules";
+import { getFirstAccessiblePath, modulePermissionMap } from "../utils/rbac";
 
 const AuthContext = createContext(null);
 
@@ -9,6 +10,8 @@ const TOKEN_KEY = "china-erp-token";
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [setup, setSetup] = useState({ usersCount: 0, allowPublicSignup: false });
+  const [setupLoading, setSetupLoading] = useState(true);
 
   const loadUser = async () => {
     const token = window.localStorage.getItem(TOKEN_KEY);
@@ -28,7 +31,24 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loadSetup = async () => {
+    setSetupLoading(true);
+    try {
+      const data = await authApi.setup();
+      setSetup({
+        usersCount: Number(data?.usersCount || 0),
+        allowPublicSignup: Boolean(data?.allowPublicSignup),
+      });
+      return data;
+    } catch (_error) {
+      return null;
+    } finally {
+      setSetupLoading(false);
+    }
+  };
+
   useEffect(() => {
+    loadSetup();
     loadUser();
   }, []);
 
@@ -41,6 +61,7 @@ export function AuthProvider({ children }) {
 
   const signup = async (payload, options = { autoLogin: false }) => {
     const data = await authApi.signup(payload);
+    setSetup({ usersCount: 1, allowPublicSignup: false });
     if (options.autoLogin) {
       window.localStorage.setItem(TOKEN_KEY, data.token);
       setUser(data.user);
@@ -53,9 +74,43 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const permissions = user?.permissions || {};
+  const hasPermission = (permissionKey) => {
+    if (!permissionKey) {
+      return true;
+    }
+    return Boolean(permissions?.[permissionKey]);
+  };
+  const hasAnyPermission = (permissionKeys = []) => {
+    if (!Array.isArray(permissionKeys) || permissionKeys.length === 0) {
+      return true;
+    }
+    return permissionKeys.some((key) => hasPermission(key));
+  };
+  const canAccessModule = (moduleKey) => {
+    const permissionKey = modulePermissionMap[moduleKey];
+    return hasPermission(permissionKey);
+  };
+  const defaultPath = getFirstAccessiblePath(permissions);
+
   const value = useMemo(
-    () => ({ user, loading, login, signup, logout }),
-    [user, loading],
+    () => ({
+      user,
+      loading,
+      login,
+      signup,
+      logout,
+      refreshUser: loadUser,
+      refreshSetup: loadSetup,
+      setup,
+      setupLoading,
+      permissions,
+      hasPermission,
+      hasAnyPermission,
+      canAccessModule,
+      defaultPath,
+    }),
+    [user, loading, setup, setupLoading, permissions, defaultPath],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

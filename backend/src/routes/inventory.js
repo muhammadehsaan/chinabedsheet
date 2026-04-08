@@ -1,5 +1,6 @@
 const express = require("express");
 const { prisma } = require("../db");
+const { requirePermission } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async");
 const { round2, round3 } = require("../utils/money");
 const { uploadImageSet } = require("../utils/cloudinary");
@@ -129,6 +130,7 @@ const generateNextAutoBarcode = async () => {
 
 router.get(
   "/categories",
+  requirePermission("inventory.view"),
   asyncHandler(async (req, res) => {
     const rows = await prisma.category.findMany({ orderBy: { name: "asc" } });
     res.json({ data: rows });
@@ -137,6 +139,7 @@ router.get(
 
 router.post(
   "/categories",
+  requirePermission("inventory.create"),
   asyncHandler(async (req, res) => {
     const name = formatCatalogName(req.body.name);
     if (!name) {
@@ -149,6 +152,7 @@ router.post(
 
 router.get(
   "/units",
+  requirePermission("inventory.view"),
   asyncHandler(async (req, res) => {
     const rows = await prisma.unit.findMany({ orderBy: { name: "asc" } });
     const seen = new Set();
@@ -170,6 +174,7 @@ router.get(
 
 router.post(
   "/units",
+  requirePermission("inventory.create"),
   asyncHandler(async (req, res) => {
     const name = formatCatalogName(req.body.name);
     if (!name) {
@@ -182,6 +187,7 @@ router.post(
 
 router.get(
   "/items",
+  requirePermission("inventory.view"),
   asyncHandler(async (req, res) => {
     const items = await prisma.item.findMany({
       include: { category: true, unit: true },
@@ -198,6 +204,7 @@ router.get(
 
 router.post(
   "/items",
+  requirePermission("inventory.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const name = normalizeItemName(payload.name);
@@ -253,6 +260,7 @@ router.post(
 
 router.patch(
   "/items/:id",
+  requirePermission("inventory.edit"),
   asyncHandler(async (req, res) => {
     const itemId = Number(req.params.id);
     if (!itemId || Number.isNaN(itemId)) {
@@ -363,6 +371,7 @@ router.patch(
 
 router.patch(
   "/items/:id/pricing",
+  requirePermission("inventory.edit"),
   asyncHandler(async (req, res) => {
     const itemId = Number(req.params.id);
     const payload = req.body || {};
@@ -381,6 +390,7 @@ router.patch(
 
 router.delete(
   "/items/:id",
+  requirePermission("inventory.delete"),
   asyncHandler(async (req, res) => {
     const itemId = Number(req.params.id);
     if (!itemId || Number.isNaN(itemId)) {
@@ -421,6 +431,7 @@ router.delete(
 
 router.get(
   "/alerts/low-stock",
+  requirePermission("inventory.view"),
   asyncHandler(async (req, res) => {
     const items = await prisma.item.findMany();
     const rows = items.filter(
@@ -432,6 +443,7 @@ router.get(
 
 router.get(
   "/alerts/expiry",
+  requirePermission("inventory.view"),
   asyncHandler(async (req, res) => {
     res.json({ data: [] });
   }),
@@ -439,6 +451,7 @@ router.get(
 
 router.get(
   "/stock-adjustments",
+  requirePermission("inventory.view"),
   asyncHandler(async (req, res) => {
     const rows = await prisma.stockAdjustment.findMany({
       include: { item: true },
@@ -450,6 +463,7 @@ router.get(
 
 router.post(
   "/stock-adjustments",
+  requirePermission("inventory.adjust"),
   asyncHandler(async (req, res) => {
     const itemId = Number(req.body.itemId);
     const quantity = round3(req.body.quantity || 0);
@@ -482,6 +496,7 @@ router.post(
 
 router.get(
   "/variations",
+  requirePermission("inventory.view"),
   asyncHandler(async (req, res) => {
     const itemId = req.query.itemId ? Number(req.query.itemId) : undefined;
     const rows = await prisma.variation.findMany({
@@ -500,6 +515,7 @@ router.get(
 
 router.post(
   "/variations",
+  requirePermission("inventory.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const itemId = Number(payload.itemId);
@@ -535,6 +551,7 @@ router.post(
 
 router.patch(
   "/variations/:id",
+  requirePermission("inventory.edit"),
   asyncHandler(async (req, res) => {
     const variationId = Number(req.params.id);
     const payload = req.body || {};

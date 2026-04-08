@@ -2,6 +2,7 @@ const express = require("express");
 const dayjs = require("dayjs");
 
 const { prisma } = require("../db");
+const { requirePermission } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async");
 const { round2 } = require("../utils/money");
 
@@ -28,6 +29,7 @@ const findOrCreateCustomer = async (name) => {
 
 router.get(
   "/",
+  requirePermission("emi.view"),
   asyncHandler(async (req, res) => {
     const rows = await prisma.eMIAccount.findMany({
       include: { customer: true, schedules: true },
@@ -39,6 +41,7 @@ router.get(
 
 router.post(
   "/",
+  requirePermission("emi.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const totalAmount = round2(payload.totalAmount || 0);
@@ -82,6 +85,7 @@ router.post(
 
 router.patch(
   "/:id/pay",
+  requirePermission("emi.edit"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const payload = req.body || {};
@@ -116,6 +120,7 @@ router.patch(
 
 router.patch(
   "/:id/penalty",
+  requirePermission("emi.edit"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const penalty = round2(req.body.penaltyAmount || 0);

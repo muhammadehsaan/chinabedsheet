@@ -2,6 +2,7 @@ const express = require("express");
 const dayjs = require("dayjs");
 
 const { prisma } = require("../db");
+const { requirePermission } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async");
 const { round2, round3 } = require("../utils/money");
 
@@ -18,6 +19,7 @@ const parseRange = (query) => {
 
 router.get(
   "/sales",
+  requirePermission("reports.view"),
   asyncHandler(async (req, res) => {
     const { start, end } = parseRange(req.query);
     const sales = await prisma.sale.findMany({
@@ -75,6 +77,7 @@ router.get(
 
 router.get(
   "/purchases",
+  requirePermission("reports.view"),
   asyncHandler(async (req, res) => {
     const { start, end } = parseRange(req.query);
     const purchases = await prisma.purchase.findMany({
@@ -118,6 +121,7 @@ router.get(
 
 router.get(
   "/profit",
+  requirePermission("reports.view"),
   asyncHandler(async (req, res) => {
     const { start, end } = parseRange(req.query);
     const sales = await prisma.sale.findMany({
@@ -171,6 +175,7 @@ router.get(
 
 router.get(
   "/stock",
+  requirePermission("reports.view"),
   asyncHandler(async (req, res) => {
     const items = await prisma.item.findMany({ include: { category: true } });
     const lowStockItems = items.filter((item) => Number(item.currentStock) <= item.lowStockThreshold);
@@ -200,6 +205,7 @@ router.get(
 
 router.get(
   "/gst",
+  requirePermission("reports.view"),
   asyncHandler(async (req, res) => {
     const { start, end } = parseRange(req.query);
     const sales = await prisma.sale.findMany({ where: { saleDate: { gte: start, lte: end } } });
@@ -220,6 +226,7 @@ router.get(
 
 router.get(
   "/daybook",
+  requirePermission("reports.view"),
   asyncHandler(async (req, res) => {
     const { start, end } = parseRange(req.query);
     const sales = await prisma.sale.findMany({ where: { saleDate: { gte: start, lte: end } } });
@@ -303,6 +310,7 @@ router.get(
 
 router.get(
   "/expiry",
+  requirePermission("reports.view"),
   asyncHandler(async (req, res) => {
     res.json({ data: { summary: { totalLots: 0, expiredLots: 0 }, records: [] } });
   }),

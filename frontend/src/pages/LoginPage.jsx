@@ -6,12 +6,13 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { extractApiError } from "../api/client";
 import brandLogo from "../assets/company logo.png";
+import { getFirstAccessiblePath } from "../utils/rbac";
 
 
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, setup, setupLoading } = useAuth();
   const { mode, toggleMode } = useTheme();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -23,8 +24,8 @@ function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login({ email: form.email, password: form.password });
-      navigate("/", { replace: true });
+      const data = await login({ email: form.email, password: form.password });
+      navigate(getFirstAccessiblePath(data?.user?.permissions || {}) || "/", { replace: true });
     } catch (err) {
       setError(extractApiError(err, "Login failed."));
     } finally {
@@ -93,10 +94,18 @@ function LoginPage() {
         </form>
 
         <div className="auth-footer">
-          <span>New here?</span>
-          <NavLink to="/signup" className="auth-link">
-            Create account
-          </NavLink>
+          {setupLoading ? (
+            <span>Checking account setup...</span>
+          ) : setup.allowPublicSignup ? (
+            <>
+              <span>New here?</span>
+              <NavLink to="/signup" className="auth-link">
+                Create first admin account
+              </NavLink>
+            </>
+          ) : (
+            <span>Admin account is already configured. Sign in to continue.</span>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 const express = require("express");
 
 const { prisma } = require("../db");
+const { requirePermission } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async");
 const { calcLineTotals, round2, round3 } = require("../utils/money");
 
@@ -255,6 +256,7 @@ const resolveUnitPrice = (item, pricingMode, provided) => {
 
 router.get(
   "/",
+  requirePermission("sales.view"),
   asyncHandler(async (req, res) => {
     const rows = await prisma.sale.findMany({
       include: {
@@ -285,6 +287,7 @@ router.get(
 
 router.get(
   "/deals",
+  requirePermission("sales.view"),
   asyncHandler(async (req, res) => {
     const rows = await prisma.deal.findMany({ orderBy: { updatedAt: "desc" } });
     res.json({ data: rows });
@@ -293,6 +296,7 @@ router.get(
 
 router.post(
   "/deals",
+  requirePermission("sales.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const name = String(payload.name || "").trim();
@@ -313,6 +317,7 @@ router.post(
 
 router.get(
   "/audit",
+  requirePermission("sales.view"),
   asyncHandler(async (req, res) => {
     const logs = await prisma.auditLog.findMany({ orderBy: { createdAt: "desc" } });
     res.json({ data: logs });
@@ -321,6 +326,7 @@ router.get(
 
 router.post(
   "/",
+  requirePermission("sales.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const saleDate = payload.saleDate ? new Date(payload.saleDate) : new Date();
@@ -508,6 +514,7 @@ router.post(
 
 router.patch(
   "/:id/clear-hold",
+  requirePermission("sales.edit"),
   asyncHandler(async (req, res) => {
     const rawRef = String(req.params.id || "").trim();
     const payload = req.body || {};
@@ -579,6 +586,7 @@ router.patch(
 
 router.patch(
   "/:id",
+  requirePermission("sales.edit"),
   asyncHandler(async (req, res) => {
     const saleId = Number(req.params.id);
     if (!saleId || Number.isNaN(saleId)) {
@@ -810,6 +818,7 @@ router.patch(
 
 router.post(
   "/:id/cancel",
+  requirePermission("sales.delete"),
   asyncHandler(async (req, res) => {
     const saleId = Number(req.params.id);
     if (!saleId || Number.isNaN(saleId)) {

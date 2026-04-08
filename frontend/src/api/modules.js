@@ -68,7 +68,18 @@ export const reportsApi = {
 };
 
 export const authApi = {
+  setup: async () => withData(await api.get("/auth/setup")),
   signup: async (payload) => withData(await api.post("/auth/signup", payload)),
   login: async (payload) => withData(await api.post("/auth/login", payload)),
   me: async () => withData(await api.get("/auth/me")),
+};
+
+export const rbacApi = {
+  snapshot: async () => withData(await api.get("/rbac/snapshot")),
+  createRole: async (payload) => withData(await api.post("/rbac/roles", payload)),
+  updateRole: async (roleId, payload) => withData(await api.patch(`/rbac/roles/${roleId}`, payload)),
+  deleteRole: async (roleId) => withData(await api.delete(`/rbac/roles/${roleId}`)),
+  createUser: async (payload) => withData(await api.post("/rbac/users", payload)),
+  updateUser: async (userId, payload) => withData(await api.patch(`/rbac/users/${userId}`, payload)),
+  deleteUser: async (userId) => withData(await api.delete(`/rbac/users/${userId}`)),
 };

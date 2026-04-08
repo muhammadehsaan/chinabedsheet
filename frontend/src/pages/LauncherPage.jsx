@@ -94,8 +94,10 @@ const modules = [
 
 function LauncherPage() {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, user, canAccessModule, defaultPath } = useAuth();
   const { setActiveModule, clearActiveModule } = useModule();
+
+  const visibleModules = modules.filter((mod) => canAccessModule(mod.key));
 
   useEffect(() => {
     clearActiveModule();
@@ -132,7 +134,7 @@ function LauncherPage() {
         </div>
 
         <div className="launcher-grid">
-          {modules.map((mod) => {
+          {visibleModules.map((mod) => {
             const Icon = mod.icon;
             return (
               <button
@@ -155,6 +157,11 @@ function LauncherPage() {
             );
           })}
         </div>
+        {visibleModules.length === 0 && (
+          <div className="module-card">
+            No modules are assigned to this user yet. Default landing path: {defaultPath || "/"}
+          </div>
+        )}
       </div>
     </div>
   );

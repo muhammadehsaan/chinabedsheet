@@ -13,6 +13,9 @@ const productionRoutes = require("./routes/production");
 const emiRoutes = require("./routes/emi");
 const logisticsRoutes = require("./routes/logistics");
 const authRoutes = require("./routes/auth");
+const rbacRoutes = require("./routes/rbac");
+const testDbRoutes = require("./routes/testDb");
+const { authRequired } = require("./middleware/auth");
 
 const app = express();
 
@@ -20,20 +23,26 @@ app.use(cors());
 app.use(express.json({ limit: "25mb" }));
 app.use(morgan("dev"));
 
+app.get("/", (req, res) => {
+  res.send("API Working");
+});
+
 app.get("/api/v1/health", (req, res) => {
   res.json({ status: "ok", service: "china-bedsheet-erp-backend" });
 });
 
+app.use("/test-db", testDbRoutes);
 app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/inventory", inventoryRoutes);
-app.use("/api/v1/purchases", purchasesRoutes);
-app.use("/api/v1/sales", salesRoutes);
-app.use("/api/v1/parties", partiesRoutes);
-app.use("/api/v1/reports", reportsRoutes);
-app.use("/api/v1/accounts", accountsRoutes);
-app.use("/api/v1/production", productionRoutes);
-app.use("/api/v1/emi", emiRoutes);
-app.use("/api/v1/logistics", logisticsRoutes);
+app.use("/api/v1/inventory", authRequired, inventoryRoutes);
+app.use("/api/v1/purchases", authRequired, purchasesRoutes);
+app.use("/api/v1/sales", authRequired, salesRoutes);
+app.use("/api/v1/parties", authRequired, partiesRoutes);
+app.use("/api/v1/reports", authRequired, reportsRoutes);
+app.use("/api/v1/accounts", authRequired, accountsRoutes);
+app.use("/api/v1/production", authRequired, productionRoutes);
+app.use("/api/v1/emi", authRequired, emiRoutes);
+app.use("/api/v1/logistics", authRequired, logisticsRoutes);
+app.use("/api/v1/rbac", authRequired, rbacRoutes);
 
 app.use(errorHandler);
 

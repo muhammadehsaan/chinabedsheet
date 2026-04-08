@@ -1,5 +1,6 @@
 const express = require("express");
 const { prisma } = require("../db");
+const { requirePermission } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async");
 const { calcLineTotals, round2, round3 } = require("../utils/money");
 const {
@@ -270,6 +271,7 @@ const reversePurchaseStock = async (tx, lines) => {
 
 router.get(
   "/",
+  requirePermission("purchases.view"),
   asyncHandler(async (req, res) => {
     const rows = await prisma.purchase.findMany({
       include: { supplier: true, lines: true, bankAccount: true },
@@ -281,6 +283,7 @@ router.get(
 
 router.post(
   "/",
+  requirePermission("purchases.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const purchaseDate = payload.purchaseDate ? new Date(payload.purchaseDate) : new Date();
@@ -340,6 +343,7 @@ router.post(
 
 router.patch(
   "/:id",
+  requirePermission("purchases.edit"),
   asyncHandler(async (req, res) => {
     const purchaseId = Number(req.params.id);
     if (!Number.isFinite(purchaseId)) {

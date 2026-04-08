@@ -1,6 +1,7 @@
 const express = require("express");
 
 const { prisma } = require("../db");
+const { requireAnyPermission } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async");
 const { round2 } = require("../utils/money");
 const {
@@ -31,6 +32,7 @@ const extractPaidAmountFromSale = (sale = {}) => {
 
 router.get(
   "/",
+  requireAnyPermission(["sales.view", "purchases.view", "accounts.view", "emi.view"]),
   asyncHandler(async (req, res) => {
     const type = req.query.type;
     const rows = await prisma.party.findMany({
@@ -43,6 +45,7 @@ router.get(
 
 router.post(
   "/",
+  requireAnyPermission(["sales.create", "purchases.create", "accounts.create", "emi.create"]),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const name = String(payload.name || "").trim();
@@ -77,6 +80,7 @@ router.post(
 
 router.get(
   "/:id",
+  requireAnyPermission(["sales.view", "purchases.view", "accounts.view", "emi.view"]),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const party = await prisma.party.findUnique({ where: { id } });
@@ -90,6 +94,7 @@ router.get(
 
 router.get(
   "/:id/history",
+  requireAnyPermission(["sales.view", "purchases.view", "accounts.view", "emi.view"]),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const purchases = await prisma.purchase.findMany({
@@ -106,6 +111,7 @@ router.get(
 
 router.get(
   "/:id/ledger",
+  requireAnyPermission(["sales.view", "purchases.view", "accounts.view", "emi.view"]),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const party = await prisma.party.findUnique({ where: { id } });

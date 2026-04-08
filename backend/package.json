@@ -2,10 +2,10 @@
   "name": "china-bedsheet-erp-backend",
   "version": "1.0.0",
   "private": true,
-  "main": "src/server.js",
+  "main": "index.js",
   "scripts": {
     "dev": "node src/server.js",
-    "start": "node src/server.js",
+    "start": "node index.js",
     "prisma": "prisma",
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
@@ -20,6 +20,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "pg": "^8.20.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

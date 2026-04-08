@@ -4,9 +4,11 @@ import * as XLSX from "xlsx";
 import { Download, Eye, Lock, Pencil, Plus, ShieldCheck, Trash2, Upload, UserCog } from "lucide-react";
 
 import ModuleTabs from "../components/ModuleTabs";
-import { inventoryApi } from "../api/modules";
+import { inventoryApi, rbacApi } from "../api/modules";
 import { extractApiError } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { formatNumber } from "../utils/format";
+import { allPermissionKeys, createPermissionState, permissionGroups } from "../utils/rbac";
 
 const tabs = [
   { value: "roles", label: "User Roles" },
@@ -43,196 +45,7 @@ const rbacSections = [
   { key: "roles", label: "Roles" },
 ];
 
-const permissionGroups = [
-  {
-    key: "dashboard",
-    label: "Dashboard",
-    permissions: [
-      { key: "dashboard.view", label: "View dashboard" },
-      { key: "dashboard.notifications", label: "Open notifications" },
-    ],
-  },
-  {
-    key: "sales",
-    label: "Sales & POS",
-    permissions: [
-      { key: "sales.view", label: "View sales" },
-      { key: "sales.create", label: "Create sales" },
-      { key: "sales.edit", label: "Edit sales" },
-      { key: "sales.delete", label: "Delete / cancel sales" },
-      { key: "sales.print", label: "Print invoices" },
-    ],
-  },
-  {
-    key: "inventory",
-    label: "Inventory",
-    permissions: [
-      { key: "inventory.view", label: "View inventory" },
-      { key: "inventory.create", label: "Create items" },
-      { key: "inventory.edit", label: "Edit items" },
-      { key: "inventory.delete", label: "Delete items" },
-      { key: "inventory.adjust", label: "Adjust stock" },
-    ],
-  },
-  {
-    key: "purchases",
-    label: "Purchases",
-    permissions: [
-      { key: "purchases.view", label: "View purchases" },
-      { key: "purchases.create", label: "Create purchases" },
-      { key: "purchases.edit", label: "Edit purchases" },
-      { key: "purchases.delete", label: "Delete purchases" },
-    ],
-  },
-  {
-    key: "accounts",
-    label: "Accounts & Finance",
-    permissions: [
-      { key: "accounts.view", label: "View accounts" },
-      { key: "accounts.create", label: "Create bank / ledger" },
-      { key: "accounts.edit", label: "Edit bank / ledger" },
-      { key: "accounts.delete", label: "Delete bank / ledger" },
-    ],
-  },
-  {
-    key: "emi",
-    label: "EMI & Installments",
-    permissions: [
-      { key: "emi.view", label: "View EMI" },
-      { key: "emi.create", label: "Create EMI" },
-      { key: "emi.edit", label: "Edit EMI" },
-      { key: "emi.delete", label: "Delete EMI" },
-    ],
-  },
-  {
-    key: "reports",
-    label: "Reports",
-    permissions: [
-      { key: "reports.view", label: "View reports" },
-      { key: "reports.export", label: "Export reports" },
-      { key: "reports.print", label: "Print reports" },
-    ],
-  },
-  {
-    key: "settings",
-    label: "Settings & Security",
-    permissions: [
-      { key: "settings.view", label: "View settings" },
-      { key: "settings.roles", label: "Manage roles" },
-      { key: "settings.users", label: "Manage users" },
-      { key: "settings.permissions", label: "Change permissions" },
-    ],
-  },
-];
-
-const allPermissionKeys = permissionGroups.flatMap((group) =>
-  group.permissions.map((permission) => permission.key),
-);
-
-const createPermissionState = (fill = false, overrides = {}) =>
-  allPermissionKeys.reduce(
-    (acc, key) => ({
-      ...acc,
-      [key]: key in overrides ? Boolean(overrides[key]) : fill,
-    }),
-    {},
-  );
-
-const initialRoles = [
-  {
-    id: "admin",
-    name: "Admin",
-    description: "System owner with complete access to every area.",
-    status: "Active",
-    isLocked: true,
-    permissions: createPermissionState(true),
-  },
-  {
-    id: "manager",
-    name: "Manager",
-    description: "Can manage sales, inventory, purchases and reports.",
-    status: "Active",
-    isLocked: false,
-    permissions: createPermissionState(false, {
-      "dashboard.view": true,
-      "dashboard.notifications": true,
-      "sales.view": true,
-      "sales.create": true,
-      "sales.edit": true,
-      "sales.print": true,
-      "inventory.view": true,
-      "inventory.create": true,
-      "inventory.edit": true,
-      "inventory.adjust": true,
-      "purchases.view": true,
-      "purchases.create": true,
-      "purchases.edit": true,
-      "accounts.view": true,
-      "emi.view": true,
-      "emi.create": true,
-      "emi.edit": true,
-      "reports.view": true,
-      "reports.export": true,
-      "settings.view": true,
-      "settings.users": true,
-    }),
-  },
-  {
-    id: "sales-executive",
-    name: "Sales Executive",
-    description: "Handles counter sales, printing and customer dealing.",
-    status: "Active",
-    isLocked: false,
-    permissions: createPermissionState(false, {
-      "dashboard.view": true,
-      "sales.view": true,
-      "sales.create": true,
-      "sales.print": true,
-      "inventory.view": true,
-      "emi.view": true,
-      "emi.create": true,
-      "reports.view": true,
-    }),
-  },
-];
-
-const initialUsers = [
-  {
-    id: "user-admin",
-    name: "Admin",
-    username: "admin",
-    email: "admin@china-bedsheet.com",
-    status: "Active",
-    roleId: "admin",
-    phone: "0300-0000000",
-    notes: "Default super admin account.",
-    isLocked: true,
-  },
-  {
-    id: "user-muhammad-ali",
-    name: "Muhammad Ali",
-    username: "mali",
-    email: "mali@china-bedsheet.com",
-    status: "Active",
-    roleId: "manager",
-    phone: "0312-1234567",
-    notes: "Operations manager mock user.",
-    isLocked: false,
-  },
-  {
-    id: "user-warehouse",
-    name: "Warehouse",
-    username: "warehouse",
-    email: "warehouse@china-bedsheet.com",
-    status: "Inactive",
-    roleId: "sales-executive",
-    phone: "",
-    notes: "",
-    isLocked: false,
-  },
-];
-
-const createEmptyUserForm = (defaultRoleId = "sales-executive") => ({
+const createEmptyUserForm = (defaultRoleId = "") => ({
   name: "",
   username: "",
   email: "",
@@ -240,6 +53,7 @@ const createEmptyUserForm = (defaultRoleId = "sales-executive") => ({
   status: "Active",
   roleId: defaultRoleId,
   notes: "",
+  password: "",
 });
 
 const createEmptyRoleForm = () => ({
@@ -249,15 +63,9 @@ const createEmptyRoleForm = () => ({
   permissions: createPermissionState(false),
 });
 
-const slugifyRoleId = (value) =>
-  String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
 function PreferencesPage() {
   const queryClient = useQueryClient();
+  const { user, refreshUser, hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState("roles");
   const [feedback, setFeedback] = useState(null);
   const [stockDate, setStockDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -271,17 +79,18 @@ function PreferencesPage() {
   const [rowNewStockDrafts, setRowNewStockDrafts] = useState({});
   const [importingStock, setImportingStock] = useState(false);
   const stockImportRef = useRef(null);
-  const [roleRows, setRoleRows] = useState(initialRoles);
-  const [userRows, setUserRows] = useState(initialUsers);
-  const [editingRoleId, setEditingRoleId] = useState("admin");
+  const [editingRoleId, setEditingRoleId] = useState("");
   const [roleEditorMode, setRoleEditorMode] = useState("view");
   const [activeRbacSection, setActiveRbacSection] = useState("overview");
-  const [roleForm, setRoleForm] = useState(() => ({
-    ...initialRoles[0],
-    permissions: { ...initialRoles[0].permissions },
-  }));
+  const [roleForm, setRoleForm] = useState(() => createEmptyRoleForm());
   const [editingUserId, setEditingUserId] = useState(null);
-  const [userForm, setUserForm] = useState(() => createEmptyUserForm(initialRoles[2]?.id || initialRoles[0]?.id));
+  const [userForm, setUserForm] = useState(() => createEmptyUserForm());
+
+  const rbacQuery = useQuery({
+    queryKey: ["rbac", "snapshot"],
+    queryFn: rbacApi.snapshot,
+    enabled: activeTab === "roles",
+  });
 
   const itemsQuery = useQuery({
     queryKey: ["inventory", "items"],
@@ -295,6 +104,11 @@ function PreferencesPage() {
 
   const items = itemsQuery.data || [];
   const stockAdjustments = stockAdjustmentsQuery.data || [];
+  const roleRows = rbacQuery.data?.roles || [];
+  const userRows = rbacQuery.data?.users || [];
+  const canManageUsers = hasPermission("settings.users");
+  const canManageRoles = hasPermission("settings.roles");
+  const canChangePermissions = hasPermission("settings.permissions");
   const selectedRole = useMemo(
     () => roleRows.find((role) => role.id === editingRoleId) || null,
     [editingRoleId, roleRows],
@@ -392,6 +206,41 @@ function PreferencesPage() {
       queryClient.invalidateQueries({ queryKey: ["inventory", "stock-adjustments"] });
       queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock"] });
     },
+  });
+
+  const refreshRbacState = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["rbac", "snapshot"] });
+    await refreshUser();
+  };
+
+  const createRoleMutation = useMutation({
+    mutationFn: rbacApi.createRole,
+    onSuccess: refreshRbacState,
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ roleId, payload }) => rbacApi.updateRole(roleId, payload),
+    onSuccess: refreshRbacState,
+  });
+
+  const deleteRoleMutation = useMutation({
+    mutationFn: rbacApi.deleteRole,
+    onSuccess: refreshRbacState,
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: rbacApi.createUser,
+    onSuccess: refreshRbacState,
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ userId, payload }) => rbacApi.updateUser(userId, payload),
+    onSuccess: refreshRbacState,
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: rbacApi.deleteUser,
+    onSuccess: refreshRbacState,
   });
 
   const saveStockAdjustment = async ({ item, newStock, reason }) => {
@@ -564,6 +413,15 @@ function PreferencesPage() {
     }
   }, [roleRows, selectedRole]);
 
+  useEffect(() => {
+    if (!editingUserId && !userForm.roleId && roleRows.length > 0) {
+      setUserForm((prev) => ({
+        ...prev,
+        roleId: roleRows.find((role) => !role.isLocked)?.id || roleRows[0]?.id || "",
+      }));
+    }
+  }, [editingUserId, roleRows, userForm.roleId]);
+
   const handleUserFormChange = (field, value) => {
     setUserForm((prev) => ({
       ...prev,
@@ -572,7 +430,7 @@ function PreferencesPage() {
   };
 
   const handleRoleFormChange = (field, value) => {
-    if (selectedRoleIsLocked) {
+    if (selectedRoleIsLocked || !canManageRoles) {
       return;
     }
     setRoleForm((prev) => ({
@@ -582,7 +440,7 @@ function PreferencesPage() {
   };
 
   const handlePermissionToggle = (permissionKey) => {
-    if (selectedRoleIsLocked) {
+    if (selectedRoleIsLocked || !canChangePermissions) {
       return;
     }
     setRoleForm((prev) => ({
@@ -595,7 +453,7 @@ function PreferencesPage() {
   };
 
   const handlePermissionGroupToggle = (group, enabled) => {
-    if (selectedRoleIsLocked) {
+    if (selectedRoleIsLocked || !canChangePermissions) {
       return;
     }
     setRoleForm((prev) => {
@@ -610,8 +468,12 @@ function PreferencesPage() {
     });
   };
 
-  const handleSaveRole = () => {
+  const handleSaveRole = async () => {
     setFeedback(null);
+    if (!canManageRoles || !canChangePermissions) {
+      setFeedback({ type: "error", message: "You do not have permission to change roles." });
+      return;
+    }
     const roleName = String(roleForm.name || "").trim();
     if (!roleName) {
       setFeedback({ type: "error", message: "Role name is required." });
@@ -621,100 +483,93 @@ function PreferencesPage() {
       setFeedback({ type: "error", message: "Admin role is locked and cannot be modified." });
       return;
     }
-    const roleId = roleEditorMode === "create" ? slugifyRoleId(roleName) : editingRoleId;
-    if (!roleId) {
-      setFeedback({ type: "error", message: "Role id could not be generated." });
-      return;
-    }
-    const duplicateRole = roleRows.find(
-      (role) => role.id !== editingRoleId && String(role.name || "").toLowerCase() === roleName.toLowerCase(),
-    );
-    if (duplicateRole) {
-      setFeedback({ type: "error", message: "A role with this name already exists." });
-      return;
-    }
-    const nextRole = {
-      id: roleId,
+    const payload = {
       name: roleName,
       description: String(roleForm.description || "").trim(),
       status: roleForm.status || "Active",
-      isLocked: false,
       permissions: { ...createPermissionState(false), ...(roleForm.permissions || {}) },
     };
-    setRoleRows((prev) =>
-      roleEditorMode === "create"
-        ? [...prev, nextRole]
-        : prev.map((role) => (role.id === editingRoleId ? { ...role, ...nextRole } : role)),
-    );
-    loadRoleIntoEditor(nextRole, "view");
-    if (roleEditorMode === "create" && !userForm.roleId) {
-      setUserForm((prev) => ({ ...prev, roleId }));
+    try {
+      const nextRole =
+        roleEditorMode === "create"
+          ? await createRoleMutation.mutateAsync(payload)
+          : await updateRoleMutation.mutateAsync({ roleId: editingRoleId, payload });
+      loadRoleIntoEditor(nextRole, "view");
+      if (roleEditorMode === "create" && !userForm.roleId) {
+        setUserForm((prev) => ({ ...prev, roleId: nextRole.id }));
+      }
+      setFeedback({
+        type: "success",
+        message: roleEditorMode === "create" ? "Role created successfully." : "Role updated successfully.",
+      });
+    } catch (error) {
+      setFeedback({ type: "error", message: extractApiError(error, "Failed to save role.") });
     }
-    setFeedback({
-      type: "success",
-      message: roleEditorMode === "create" ? "Role created successfully." : "Role updated successfully.",
-    });
   };
 
-  const handleDeleteRole = (role) => {
+  const handleDeleteRole = async (role) => {
     setFeedback(null);
+    if (!canManageRoles) {
+      setFeedback({ type: "error", message: "You do not have permission to delete roles." });
+      return;
+    }
     if (role.isLocked) {
       setFeedback({ type: "error", message: "Admin role cannot be deleted." });
       return;
     }
-    const assignedUsers = userRows.filter((user) => user.roleId === role.id).length;
-    if (assignedUsers > 0) {
-      setFeedback({ type: "error", message: "Move assigned users before deleting this role." });
-      return;
+    try {
+      await deleteRoleMutation.mutateAsync(role.id);
+      if (editingRoleId === role.id) {
+        setEditingRoleId("");
+        setRoleEditorMode("create");
+        setRoleForm(createEmptyRoleForm());
+      }
+      setFeedback({ type: "success", message: "Role deleted successfully." });
+    } catch (error) {
+      setFeedback({ type: "error", message: extractApiError(error, "Failed to delete role.") });
     }
-    setRoleRows((prev) => prev.filter((row) => row.id !== role.id));
-    if (editingRoleId === role.id) {
-      const fallbackRole = roleRows.find((row) => row.id !== role.id) || initialRoles[0];
-      loadRoleIntoEditor(fallbackRole, "view");
-    }
-    setFeedback({ type: "success", message: "Role deleted successfully." });
   };
 
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     setFeedback(null);
+    if (!canManageUsers) {
+      setFeedback({ type: "error", message: "You do not have permission to manage users." });
+      return;
+    }
     const name = String(userForm.name || "").trim();
-    const username = String(userForm.username || "").trim();
-    const email = String(userForm.email || "").trim();
-    if (!name || !username || !userForm.roleId) {
-      setFeedback({ type: "error", message: "User name, username and role are required." });
+    const email = String(userForm.email || "").trim().toLowerCase();
+    if (!name || !email || !userForm.roleId) {
+      setFeedback({ type: "error", message: "User name, email and role are required." });
       return;
     }
-    const duplicateUser = userRows.find(
-      (user) =>
-        user.id !== editingUserId &&
-        (String(user.username || "").toLowerCase() === username.toLowerCase() ||
-          (email && String(user.email || "").toLowerCase() === email.toLowerCase())),
-    );
-    if (duplicateUser) {
-      setFeedback({ type: "error", message: "Username or email is already in use." });
+    if (!editingUserId && !String(userForm.password || "")) {
+      setFeedback({ type: "error", message: "Password is required for new user." });
       return;
     }
-    const nextUser = {
-      id: editingUserId || `user-${Date.now()}`,
+    const payload = {
       name,
-      username,
+      username: String(userForm.username || "").trim(),
       email,
       phone: String(userForm.phone || "").trim(),
       status: userForm.status || "Active",
       roleId: userForm.roleId,
       notes: String(userForm.notes || "").trim(),
-      isLocked: false,
+      password: String(userForm.password || ""),
     };
-    setUserRows((prev) =>
-      editingUserId
-        ? prev.map((user) => (user.id === editingUserId ? { ...user, ...nextUser } : user))
-        : [nextUser, ...prev],
-    );
-    resetUserEditor();
-    setFeedback({
-      type: "success",
-      message: editingUserId ? "User updated successfully." : "User created successfully.",
-    });
+    try {
+      if (editingUserId) {
+        await updateUserMutation.mutateAsync({ userId: editingUserId, payload });
+      } else {
+        await createUserMutation.mutateAsync(payload);
+      }
+      resetUserEditor();
+      setFeedback({
+        type: "success",
+        message: editingUserId ? "User updated successfully." : "User created successfully.",
+      });
+    } catch (error) {
+      setFeedback({ type: "error", message: extractApiError(error, "Failed to save user.") });
+    }
   };
 
   const handleEditUser = (user) => {
@@ -727,20 +582,32 @@ function PreferencesPage() {
       status: user.status || "Active",
       roleId: user.roleId || roleRows[0]?.id || "",
       notes: user.notes || "",
+      password: "",
     });
   };
 
-  const handleDeleteUser = (user) => {
+  const handleDeleteUser = async (targetUser) => {
     setFeedback(null);
-    if (user.isLocked) {
+    if (!canManageUsers) {
+      setFeedback({ type: "error", message: "You do not have permission to delete users." });
+      return;
+    }
+    if (targetUser.isLocked) {
       setFeedback({ type: "error", message: "Admin user is locked and cannot be deleted." });
       return;
     }
-    setUserRows((prev) => prev.filter((row) => row.id !== user.id));
-    if (editingUserId === user.id) {
-      resetUserEditor();
+    try {
+      await deleteUserMutation.mutateAsync(targetUser.id);
+      if (editingUserId === targetUser.id) {
+        resetUserEditor();
+      }
+      if (Number(user?.id || 0) === Number(targetUser.id || 0)) {
+        await refreshUser();
+      }
+      setFeedback({ type: "success", message: "User deleted successfully." });
+    } catch (error) {
+      setFeedback({ type: "error", message: extractApiError(error, "Failed to delete user.") });
     }
-    setFeedback({ type: "success", message: "User deleted successfully." });
   };
 
   const handleEnterToNextField = (event) => {
@@ -802,7 +669,7 @@ function PreferencesPage() {
               <div>
                 <h4>RBAC Setup</h4>
                 <p className="module-subtitle">
-                  Mock UI for users, roles and permission toggles. Enforcement will be connected later.
+                  Manage live users, roles and permission toggles. Admin remains system protected.
                 </p>
               </div>
               <div className="rbac-chip">
@@ -852,6 +719,10 @@ function PreferencesPage() {
                 </button>
               ))}
             </div>
+            {rbacQuery.isLoading ? <div className="hint-line">Loading roles and users...</div> : null}
+            {rbacQuery.isError ? (
+              <div className="hint-line">Failed to load RBAC data. Please refresh this page.</div>
+            ) : null}
           </article>
 
           {activeRbacSection === "users" && (
@@ -860,9 +731,9 @@ function PreferencesPage() {
               <div className="rbac-card-head">
                 <div>
                   <h4>{editingUserId ? "Edit User" : "Add User"}</h4>
-                  <p className="module-subtitle">Create users with role assignment. Access checks will be connected later.</p>
+                  <p className="module-subtitle">Create users, assign roles and keep access under control.</p>
                 </div>
-                <button type="button" className="small-btn small-btn--ghost" onClick={resetUserEditor}>
+                <button type="button" className="small-btn small-btn--ghost" onClick={resetUserEditor} disabled={!canManageUsers}>
                   <Plus size={13} /> New User
                 </button>
               </div>
@@ -874,6 +745,7 @@ function PreferencesPage() {
                     value={userForm.name}
                     onChange={(event) => handleUserFormChange("name", event.target.value)}
                     placeholder="Muhammad Ali"
+                    disabled={!canManageUsers}
                   />
                 </label>
                 <label>
@@ -883,6 +755,7 @@ function PreferencesPage() {
                     value={userForm.username}
                     onChange={(event) => handleUserFormChange("username", event.target.value)}
                     placeholder="mali"
+                    disabled={!canManageUsers}
                   />
                 </label>
                 <label>
@@ -892,6 +765,7 @@ function PreferencesPage() {
                     value={userForm.email}
                     onChange={(event) => handleUserFormChange("email", event.target.value)}
                     placeholder="user@china-bedsheet.com"
+                    disabled={!canManageUsers}
                   />
                 </label>
                 <label>
@@ -901,11 +775,26 @@ function PreferencesPage() {
                     value={userForm.phone}
                     onChange={(event) => handleUserFormChange("phone", event.target.value)}
                     placeholder="03xx-xxxxxxx"
+                    disabled={!canManageUsers}
+                  />
+                </label>
+                <label>
+                  Password
+                  <input
+                    type="password"
+                    value={userForm.password}
+                    onChange={(event) => handleUserFormChange("password", event.target.value)}
+                    placeholder={editingUserId ? "Leave blank to keep current password" : "Create password"}
+                    disabled={!canManageUsers}
                   />
                 </label>
                 <label>
                   Role
-                  <select value={userForm.roleId} onChange={(event) => handleUserFormChange("roleId", event.target.value)}>
+                  <select
+                    value={userForm.roleId}
+                    onChange={(event) => handleUserFormChange("roleId", event.target.value)}
+                    disabled={!canManageUsers}
+                  >
                     {roleRows.map((role) => (
                       <option key={role.id} value={role.id}>
                         {role.name}
@@ -915,7 +804,11 @@ function PreferencesPage() {
                 </label>
                 <label>
                   Status
-                  <select value={userForm.status} onChange={(event) => handleUserFormChange("status", event.target.value)}>
+                  <select
+                    value={userForm.status}
+                    onChange={(event) => handleUserFormChange("status", event.target.value)}
+                    disabled={!canManageUsers}
+                  >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                   </select>
@@ -927,11 +820,16 @@ function PreferencesPage() {
                     value={userForm.notes}
                     onChange={(event) => handleUserFormChange("notes", event.target.value)}
                     placeholder="Optional note for this user"
+                    disabled={!canManageUsers}
                   />
                 </label>
               </div>
               <div className="inline-actions">
-                <button type="button" onClick={handleSaveUser}>
+                <button
+                  type="button"
+                  onClick={handleSaveUser}
+                  disabled={!canManageUsers || createUserMutation.isPending || updateUserMutation.isPending}
+                >
                   <UserCog size={14} /> {editingUserId ? "Update User" : "Save User"}
                 </button>
                 <button type="button" className="small-btn small-btn--ghost" onClick={resetUserEditor}>
@@ -991,13 +889,18 @@ function PreferencesPage() {
                           </td>
                           <td>
                             <div className="rbac-actions">
-                              <button type="button" className="small-btn small-btn--ghost" onClick={() => handleEditUser(user)}>
+                              <button
+                                type="button"
+                                className="small-btn small-btn--ghost"
+                                disabled={!canManageUsers}
+                                onClick={() => handleEditUser(user)}
+                              >
                                 <Pencil size={13} /> Edit
                               </button>
                               <button
                                 type="button"
                                 className="small-btn small-btn--danger"
-                                disabled={user.isLocked}
+                                disabled={user.isLocked || !canManageUsers || deleteUserMutation.isPending}
                                 onClick={() => handleDeleteUser(user)}
                               >
                                 <Trash2 size={13} /> Delete
@@ -1027,7 +930,7 @@ function PreferencesPage() {
                   </p>
                 </div>
                 <div className="rbac-card-actions">
-                  <button type="button" className="small-btn small-btn--ghost" onClick={resetRoleEditor}>
+                  <button type="button" className="small-btn small-btn--ghost" onClick={resetRoleEditor} disabled={!canManageRoles}>
                     <Plus size={13} /> New Role
                   </button>
                   {selectedRoleIsLocked ? (
@@ -1059,7 +962,7 @@ function PreferencesPage() {
                     value={roleForm.name}
                     onChange={(event) => handleRoleFormChange("name", event.target.value)}
                     placeholder="Sales Executive"
-                    disabled={selectedRoleIsLocked || roleEditorMode === "view"}
+                    disabled={selectedRoleIsLocked || roleEditorMode === "view" || !canManageRoles}
                   />
                 </label>
                 <label>
@@ -1067,7 +970,7 @@ function PreferencesPage() {
                   <select
                     value={roleForm.status}
                     onChange={(event) => handleRoleFormChange("status", event.target.value)}
-                    disabled={selectedRoleIsLocked || roleEditorMode === "view"}
+                    disabled={selectedRoleIsLocked || roleEditorMode === "view" || !canManageRoles}
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -1080,7 +983,7 @@ function PreferencesPage() {
                     value={roleForm.description}
                     onChange={(event) => handleRoleFormChange("description", event.target.value)}
                     placeholder="What this role is meant to do"
-                    disabled={selectedRoleIsLocked || roleEditorMode === "view"}
+                    disabled={selectedRoleIsLocked || roleEditorMode === "view" || !canManageRoles}
                   />
                 </label>
               </div>
@@ -1090,7 +993,7 @@ function PreferencesPage() {
                   <strong>Permissions</strong>
                   <span>{formatNumber(activePermissionCount)} / {formatNumber(totalPermissionCount)} enabled</span>
                 </div>
-                {roleEditorMode !== "view" && !selectedRoleIsLocked ? (
+                {roleEditorMode !== "view" && !selectedRoleIsLocked && canChangePermissions ? (
                   <div className="rbac-actions">
                     <button
                       type="button"
@@ -1149,7 +1052,7 @@ function PreferencesPage() {
                               type="checkbox"
                               checked={Boolean(roleForm.permissions?.[permission.key])}
                               onChange={() => handlePermissionToggle(permission.key)}
-                              disabled={selectedRoleIsLocked || roleEditorMode === "view"}
+                              disabled={selectedRoleIsLocked || roleEditorMode === "view" || !canChangePermissions}
                             />
                           </label>
                         ))}
@@ -1167,7 +1070,14 @@ function PreferencesPage() {
                 <button
                   type="button"
                   onClick={handleSaveRole}
-                  disabled={selectedRoleIsLocked || roleEditorMode === "view"}
+                  disabled={
+                    selectedRoleIsLocked ||
+                    roleEditorMode === "view" ||
+                    !canManageRoles ||
+                    !canChangePermissions ||
+                    createRoleMutation.isPending ||
+                    updateRoleMutation.isPending
+                  }
                 >
                   <ShieldCheck size={14} /> {roleEditorMode === "create" ? "Save Role" : "Update Role"}
                 </button>
@@ -1175,7 +1085,7 @@ function PreferencesPage() {
                   <button
                     type="button"
                     className="small-btn small-btn--ghost"
-                    disabled={selectedRoleIsLocked}
+                    disabled={selectedRoleIsLocked || !canManageRoles}
                     onClick={() => loadRoleIntoEditor(selectedRole, "edit")}
                   >
                     <Pencil size={13} /> Edit Role
@@ -1235,7 +1145,7 @@ function PreferencesPage() {
                         <button
                           type="button"
                           className="small-btn small-btn--ghost"
-                          disabled={role.isLocked}
+                          disabled={role.isLocked || !canManageRoles}
                           onClick={() => loadRoleIntoEditor(role, "edit")}
                         >
                           <Pencil size={13} /> Edit
@@ -1243,7 +1153,7 @@ function PreferencesPage() {
                         <button
                           type="button"
                           className="small-btn small-btn--danger"
-                          disabled={role.isLocked}
+                          disabled={role.isLocked || !canManageRoles || deleteRoleMutation.isPending}
                           onClick={() => handleDeleteRole(role)}
                         >
                           <Trash2 size={13} /> Delete

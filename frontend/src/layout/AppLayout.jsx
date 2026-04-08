@@ -27,6 +27,7 @@ import brandLogo from "../assets/company logo.png";
 import { useAuth } from "../context/AuthContext";
 import { resolveModuleFromPath, useModule } from "../context/ModuleContext";
 import { useTheme } from "../context/ThemeContext";
+import { modulePermissionMap } from "../utils/rbac";
 import { formatCurrency, formatDate, formatNumber } from "../utils/format";
 
 const navItems = [
@@ -188,7 +189,8 @@ const buildPrintableInvoiceHtml = ({ type, record }) => {
 function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, hasPermission } = useAuth();
+  const canOpenNotifications = hasPermission("dashboard.notifications");
   const { activeModule, setActiveModule, clearActiveModule } = useModule();
   const { mode, color, toggleMode, setColor } = useTheme();
   const [themePanelOpen, setThemePanelOpen] = useState(false);
@@ -214,9 +216,14 @@ function AppLayout() {
   const lockedModule = activeModule || currentModule;
   const isModuleAllowed = (moduleKey) => {
     if (!lockedModule) {
-      return true;
+      const permissionKey = modulePermissionMap[moduleKey];
+      return !permissionKey || hasPermission(permissionKey);
     }
-    return moduleKey ? lockedModule === moduleKey : false;
+    if (!moduleKey || lockedModule !== moduleKey) {
+      return false;
+    }
+    const permissionKey = modulePermissionMap[moduleKey];
+    return !permissionKey || hasPermission(permissionKey);
   };
   const visibleNavItems = lockedModule
     ? navItems.filter((item) => item.module === lockedModule)
@@ -240,21 +247,25 @@ function AppLayout() {
   const salesNotificationsQuery = useQuery({
     queryKey: ["sales", "list", "notifications"],
     queryFn: salesApi.listSales,
+    enabled: hasPermission("sales.view"),
   });
 
   const purchaseNotificationsQuery = useQuery({
     queryKey: ["purchases", "list", "notifications"],
     queryFn: purchasesApi.listPurchases,
+    enabled: hasPermission("purchases.view"),
   });
 
   const lowStockNotificationsQuery = useQuery({
     queryKey: ["inventory", "low-stock", "notifications"],
     queryFn: inventoryApi.lowStockAlerts,
+    enabled: hasPermission("inventory.view"),
   });
 
   const itemsSearchQuery = useQuery({
     queryKey: ["inventory", "items", "layout-search"],
     queryFn: inventoryApi.listItems,
+    enabled: hasPermission("inventory.view"),
   });
 
   const invoiceNotifications = useMemo(() => {
@@ -815,23 +826,24 @@ function AppLayout() {
           </div>
 
           <div className="topbar-actions">
-            <div className="notification-wrap" ref={notificationRef}>
-              <button
-                type="button"
-                className="topbar-icon-btn"
-                aria-label="Notifications"
-                onClick={handleNotificationToggle}
-              >
-                <Bell size={16} />
-                {unreadCount > 0 && (
-                  <span className="notification-badge">
-                    {unreadCount > 99 ? "99+" : formatNumber(unreadCount)}
-                  </span>
-                )}
-              </button>
+            {canOpenNotifications && (
+              <div className="notification-wrap" ref={notificationRef}>
+                <button
+                  type="button"
+                  className="topbar-icon-btn"
+                  aria-label="Notifications"
+                  onClick={handleNotificationToggle}
+                >
+                  <Bell size={16} />
+                  {unreadCount > 0 && (
+                    <span className="notification-badge">
+                      {unreadCount > 99 ? "99+" : formatNumber(unreadCount)}
+                    </span>
+                  )}
+                </button>
 
-              {notificationOpen && (
-                <div className="notification-popover">
+                {notificationOpen && (
+                  <div className="notification-popover">
                   <div className="notification-head">
                     <strong>Notifications</strong>
                     <span>{formatNumber(unreadCount)} active</span>
@@ -950,9 +962,10 @@ function AppLayout() {
                       </div>
                     </>
                   )}
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
             <button type="button" className="topbar-icon-btn" aria-label="Mode" onClick={toggleMode}>
               {mode === "light" ? <Moon size={16} /> : <Sun size={16} />}
             </button>

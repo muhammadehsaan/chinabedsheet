@@ -1,6 +1,7 @@
 const express = require("express");
 
 const { prisma } = require("../db");
+const { requirePermission } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async");
 const { round2 } = require("../utils/money");
 
@@ -19,6 +20,7 @@ const normalizeOptionalDate = (value) => {
 
 router.get(
   "/banks",
+  requirePermission("accounts.view"),
   asyncHandler(async (req, res) => {
     const rows = await prisma.bankAccount.findMany({
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -29,6 +31,7 @@ router.get(
 
 router.get(
   "/banks/:id/history",
+  requirePermission("accounts.view"),
   asyncHandler(async (req, res) => {
     const bankId = Number(req.params.id);
     if (!bankId) {
@@ -201,6 +204,7 @@ router.get(
 
 router.post(
   "/banks/transactions",
+  requirePermission("accounts.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const transactionType = String(payload.type || "").trim().toUpperCase();
@@ -328,6 +332,7 @@ router.post(
 
 router.post(
   "/banks",
+  requirePermission("accounts.create"),
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
     const bankName = String(payload.bankName || "").trim();
@@ -378,6 +383,7 @@ router.post(
 
 router.patch(
   "/banks/:id",
+  requirePermission("accounts.edit"),
   asyncHandler(async (req, res) => {
     const bankId = Number(req.params.id);
     if (!bankId) {

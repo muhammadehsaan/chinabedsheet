@@ -14,6 +14,7 @@ import ProductionPage from "../pages/ProductionPage";
 import SalesPage from "../pages/SalesPage";
 import SignupPage from "../pages/SignupPage";
 import RequireAuth from "../components/RequireAuth";
+import RequirePermission from "../components/RequirePermission";
 
 const createRouter = window.location.protocol === "file:" ? createHashRouter : createBrowserRouter;
 
@@ -37,15 +38,15 @@ export const router = createRouter(
         </RequireAuth>
       ),
       children: [
-        { path: "dashboard", element: <DashboardPage /> },
-        { path: "inventory", element: <InventoryPage /> },
-        { path: "production", element: <ProductionPage /> },
-        { path: "sales", element: <SalesPage /> },
-        { path: "financials", element: <FinancialsPage /> },
-        { path: "emi", element: <EmiPage /> },
-        { path: "settings", element: <PreferencesPage /> },
-        { path: "purchases", element: <PurchasesPage /> },
-        { path: "reports", element: <ReportsPage /> },
+        { path: "dashboard", element: <RequirePermission permission="dashboard.view"><DashboardPage /></RequirePermission> },
+        { path: "inventory", element: <RequirePermission permission="inventory.view"><InventoryPage /></RequirePermission> },
+        { path: "production", element: <RequirePermission permission="production.view"><ProductionPage /></RequirePermission> },
+        { path: "sales", element: <RequirePermission permission="sales.view"><SalesPage /></RequirePermission> },
+        { path: "financials", element: <RequirePermission permission="accounts.view"><FinancialsPage /></RequirePermission> },
+        { path: "emi", element: <RequirePermission permission="emi.view"><EmiPage /></RequirePermission> },
+        { path: "settings", element: <RequirePermission permission="settings.view"><PreferencesPage /></RequirePermission> },
+        { path: "purchases", element: <RequirePermission permission="purchases.view"><PurchasesPage /></RequirePermission> },
+        { path: "reports", element: <RequirePermission permission="reports.view"><ReportsPage /></RequirePermission> },
       ],
     },
   ],
