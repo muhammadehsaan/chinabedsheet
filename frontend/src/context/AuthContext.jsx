@@ -12,6 +12,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [setup, setSetup] = useState({ usersCount: 0, allowPublicSignup: false });
   const [setupLoading, setSetupLoading] = useState(true);
+  const [setupError, setSetupError] = useState(null);
+  const [setupFallbackMode, setSetupFallbackMode] = useState(false);
 
   const loadUser = async () => {
     const token = window.localStorage.getItem(TOKEN_KEY);
@@ -33,6 +35,8 @@ export function AuthProvider({ children }) {
 
   const loadSetup = async () => {
     setSetupLoading(true);
+    setSetupError(null);
+    setSetupFallbackMode(false);
     try {
       const data = await authApi.setup();
       setSetup({
@@ -40,7 +44,16 @@ export function AuthProvider({ children }) {
         allowPublicSignup: Boolean(data?.allowPublicSignup),
       });
       return data;
-    } catch (_error) {
+    } catch (error) {
+      if (Number(error?.response?.status || 0) === 404) {
+        setSetup({ usersCount: 0, allowPublicSignup: true });
+        setSetupFallbackMode(true);
+        return {
+          usersCount: 0,
+          allowPublicSignup: true,
+        };
+      }
+      setSetupError(error);
       return null;
     } finally {
       setSetupLoading(false);
@@ -104,13 +117,15 @@ export function AuthProvider({ children }) {
       refreshSetup: loadSetup,
       setup,
       setupLoading,
+      setupError,
+      setupFallbackMode,
       permissions,
       hasPermission,
       hasAnyPermission,
       canAccessModule,
       defaultPath,
     }),
-    [user, loading, setup, setupLoading, permissions, defaultPath],
+    [user, loading, setup, setupLoading, setupError, setupFallbackMode, permissions, defaultPath],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

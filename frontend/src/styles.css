@@ -183,9 +183,10 @@ body {
 
 .auth-logo {
   display: block;
-  height: 140px;
-  width: auto;
-  max-width: 380px;
+  width: min(100%, 240px);
+  max-width: 240px;
+  max-height: 180px;
+  height: auto;
   margin: 4px auto 12px;
   object-fit: contain;
 }
@@ -3433,6 +3434,10 @@ tbody td[colspan] {
     grid-template-columns: 1fr;
   }
 
+  .inventory-product-form .pos-layout {
+    grid-template-columns: 1fr;
+  }
+
   .rbac-stats-grid,
   .rbac-permission-grid,
   .rbac-steps-grid,
@@ -3467,6 +3472,50 @@ tbody td[colspan] {
 
   .dashboard-content {
     padding: 10px;
+  }
+
+  .auth-logo {
+    width: min(100%, 180px);
+    max-width: 180px;
+  }
+
+  .sidebar-logo-image {
+    max-width: 120px;
+    max-height: 96px;
+  }
+
+  .launcher-brand {
+    align-items: center;
+    gap: 10px;
+  }
+
+  .launcher-brand-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .launcher-user-area {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .inventory-variation-toolbar {
+    align-items: stretch;
+  }
+
+  .inventory-variation-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .inventory-variation-actions .pos-sm-btn {
+    flex: 1 1 180px;
+    justify-content: center;
+  }
+
+  .inventory-variation-form .table-wrap {
+    margin-inline: -2px;
   }
 
   .dashboard-head {
@@ -4355,9 +4404,10 @@ tbody td[colspan] {
 }
 
 .launcher-brand-logo {
-  height: 36px;
-  width: auto;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .launcher-brand-name {
@@ -5176,12 +5226,14 @@ textarea.pos-input::-webkit-scrollbar {
 .inventory-variation-form tbody td {
   font-weight: 600;
   white-space: nowrap;
+  vertical-align: top;
 }
 
 .inventory-variation-form .pos-input,
 .inventory-variation-form select {
   font-size: 15px;
   font-weight: 600;
+  max-width: 100%;
 }
 
 .inventory-variation-form .variation-size-input,
@@ -5194,6 +5246,33 @@ textarea.pos-input::-webkit-scrollbar {
 .inventory-variation-form table {
   width: max-content;
   min-width: 100%;
+}
+
+.inventory-variation-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.inventory-variation-title {
+  margin-bottom: 0;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.inventory-variation-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.inventory-variation-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .inventory-product-form .pos-layout {

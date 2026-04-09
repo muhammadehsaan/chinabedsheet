@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { Moon, Sun } from "lucide-react";
@@ -10,7 +10,7 @@ import { getFirstAccessiblePath } from "../utils/rbac";
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { signup, setup, setupLoading } = useAuth();
+  const { signup, setup, setupLoading, setupError, setupFallbackMode, user, defaultPath } = useAuth();
   const { mode, toggleMode } = useTheme();
   const [form, setForm] = useState({
     name: "",
@@ -23,6 +23,12 @@ function SignupPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate(defaultPath || "/", { replace: true });
+    }
+  }, [defaultPath, navigate, user]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -49,7 +55,14 @@ function SignupPage() {
     }
   };
 
-  const showSignupForm = !setupLoading && setup.allowPublicSignup;
+  const showSignupForm = !setupLoading && (setup.allowPublicSignup || setupFallbackMode);
+  const statusMessage = setupLoading
+    ? "Checking workspace setup..."
+    : setupFallbackMode
+      ? "Signup availability could not be verified, but you can still try creating the first account."
+    : setupError
+      ? "Unable to verify signup setup right now. Please check backend connectivity and try again."
+      : "Admin account is already configured. Sign in and create users from Settings > Users.";
 
   return (
     <div className="auth-shell">
@@ -141,11 +154,7 @@ function SignupPage() {
           </form>
         ) : (
           <div className="auth-form">
-            <div className="auth-error">
-              {setupLoading
-                ? "Checking workspace setup..."
-                : "Admin account is already configured. Sign in and create users from Settings > Users."}
-            </div>
+            <div className="auth-error">{statusMessage}</div>
           </div>
         )}
 

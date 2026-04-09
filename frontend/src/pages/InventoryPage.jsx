@@ -2261,12 +2261,12 @@ const buildItemFormFromItem = (item) => ({
           </form>
 
           <form className="pos-card inventory-variation-form" onSubmit={handleSaveVariations} style={{ width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <div className="pos-section-title" style={{ marginBottom: 0, borderBottom: 0, paddingBottom: 0 }}>
+            <div className="inventory-variation-toolbar">
+              <div className="pos-section-title inventory-variation-title">
                 <Package size={16} />
                 <span>Variations</span>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="inventory-variation-actions">
                 <button
                   type="button"
                   className="pos-sm-btn"
@@ -2318,7 +2318,7 @@ const buildItemFormFromItem = (item) => ({
               </div>
             )}
             <fieldset disabled={!canEditVariationDraft} style={{ border: 0, padding: 0, marginTop: 12 }}>
-              <div className="table-wrap">
+              <div className="table-wrap inventory-variation-table-wrap">
                 <table>
 	                  <thead>
 	                    <tr>

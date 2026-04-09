@@ -12,7 +12,7 @@ import { getFirstAccessiblePath } from "../utils/rbac";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { login, setup, setupLoading } = useAuth();
+  const { login, setup, setupLoading, setupError, setupFallbackMode } = useAuth();
   const { mode, toggleMode } = useTheme();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -96,6 +96,15 @@ function LoginPage() {
         <div className="auth-footer">
           {setupLoading ? (
             <span>Checking account setup...</span>
+          ) : setupFallbackMode ? (
+            <>
+              <span>Create account setup check is unavailable.</span>
+              <NavLink to="/signup" className="auth-link">
+                Try create account
+              </NavLink>
+            </>
+          ) : setupError ? (
+            <span>Unable to verify account setup right now. Please check backend connectivity.</span>
           ) : setup.allowPublicSignup ? (
             <>
               <span>New here?</span>
