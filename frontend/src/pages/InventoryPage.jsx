@@ -1573,7 +1573,6 @@ const buildItemFormFromItem = (item) => ({
       return;
     }
     target.blur();
-    event.preventDefault();
   };
 
   return (

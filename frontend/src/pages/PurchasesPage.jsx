@@ -3175,7 +3175,6 @@ function PurchasePage() {
       return;
     }
     target.blur();
-    event.preventDefault();
   };
 
   return (
