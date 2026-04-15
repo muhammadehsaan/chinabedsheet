@@ -1,0 +1,12 @@
+{
+  "name": "china-bedsheet-deploy",
+  "private": true,
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "start": "npm --workspace backend start",
+    "dev": "npm --workspace backend run dev",
+    "generate": "npm --workspace backend run generate"
+  }
+}
